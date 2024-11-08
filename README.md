@@ -1,8 +1,5 @@
-Here's an example README file to clarify the problem for your Topic 3 project on text analysis with the NusaX dataset, focusing on Indonesian languages. The README describes the problem statement, objectives, and an overview of how the data is processed and analyzed.
 
----
-
-# README: Text Analysis on Indonesian Languages (Topic 3)
+# Text Analysis on Indonesian Languages (Topic 3)
 
 ## Problem Statement
 
@@ -81,7 +78,3 @@ The dataset used in this project is the NusaX corpus, which contains parallel da
 
 - Detailed performance metrics, including accuracy, precision, recall, and F1-score for sentiment analysis tasks.
 - Translation performance is measured using BLEU scores and qualitative assessment.
-
----
-
-Feel free to modify or expand on this README as per your project's specific details and requirements! If you need further clarification or additional sections, just let me know.
