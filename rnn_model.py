@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 
 class RNNNetwork(nn.Module):
-    def __init__(self, input_dim, hidden_dim, vocab_size, num_layers=1, bidirectional=False):
+    def __init__(self, input_dim, hidden_dim, vocab_size, pad_token_id, num_layers=1, bidirectional=False):
         super(RNNNetwork, self).__init__()
-        self.embedding = nn.Embedding(vocab_size, embedding_dim=input_dim)
+        self.embedding = nn.Embedding(vocab_size, embedding_dim=input_dim, padding_idx=pad_token_id)
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
         self.bidirectional = bidirectional
