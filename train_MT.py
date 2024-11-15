@@ -5,10 +5,12 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from torch.nn.utils import clip_grad_norm_
 from Data_loader import TranslationDataset, built_curpus
 import pandas as pd
 from cnn_model import CNNModel  # Replace or extend with different models as needed
-from lstm_model import LSTMNetwork
+from lstm_model import *
+from CNN_1 import *
 import argparse
 
 def parse_args():
@@ -16,12 +18,12 @@ def parse_args():
     parser.add_argument('--train_file', type=str, default='./nusax-main/datasets/mt/train.csv', help='Path to the training data file')
     parser.add_argument('--val_file', type=str, default='./nusax-main/datasets/mt/valid.csv', help='Path to the validation data file')
     parser.add_argument('--test_file', type=str, default='./nusax-main/datasets/mt/test.csv', help='Path to the test data file')
-    parser.add_argument('--batch_size', type=int, default=32, help='Batch size for training')
+    parser.add_argument('--batch_size', type=int, default=64, help='Batch size for training')
     parser.add_argument('--embedding_dim', type=int, default=512, help='Dimension of embeddings')
-    parser.add_argument('--num_epochs', type=int, default=15, help='Number of training epochs')
-    parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate for optimizer')
-    parser.add_argument('--max_length', type=int, default=1000, help='Maximum sequence length for input data')
-    parser.add_argument('--model', type=str, default='CNN', choices=['CNN','LSTM'], help='Type of model to use')
+    parser.add_argument('--num_epochs', type=int, default=200, help='Number of training epochs')
+    parser.add_argument('--learning_rate', type=float, default=2e-3, help='Learning rate for optimizer')
+    parser.add_argument('--max_length', type=int, default=100, help='Maximum sequence length for input data')
+    parser.add_argument('--model', type=str, default='CNN', choices=['CNN','LSTM','CNN_1'], help='Type of model to use')
     parser.add_argument('--log_dir', type=str, default='./logs', help='Base directory for logs and checkpoints')
     return parser.parse_args()
 
@@ -52,7 +54,7 @@ def create_dataloaders(train_data, val_data, test_data, source_language, target_
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
     return train_loader, val_loader, test_loader
 
-def train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs, exp_path, ckpt_path, loss_path, device):
+def train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs, exp_path, ckpt_path, loss_path, device,max_grad_norm=1.0):
     log_file = exp_path / 'training_log.txt'
     loss_file = loss_path / 'losses.txt'
 
@@ -70,6 +72,9 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
                 target_tokens = target_tokens.view(-1)
                 loss = criterion(output, target_tokens)
                 loss.backward()
+                if isinstance(model, LSTMNetworkWithAttention):  # Check if the model is an instance of LSTMNetwork
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)  # Gradient clipping
+                    
                 optimizer.step()
                 train_loss += loss.item()
             avg_train_loss = train_loss / len(train_loader)
@@ -102,7 +107,7 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': avg_train_loss,
             }, ckpt_path / f'model_epoch_{epoch+1}.pth')
-
+           
 def evaluate_model(model, test_loader, criterion, device, exp_path):
     model.eval()
     test_loss = 0
@@ -143,18 +148,24 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model_name = args.model
     if model_name == 'CNN':
-        model = CNNModel(input_dim=vocab_size, embedding_dim=args.embedding_dim, num_classes=num_classes)
+        model = CNNModel(input_dim=vocab_size, embedding_dim=args.embedding_dim, num_classes=num_classes,dropout_prob=0.3)
     elif model_name == 'LSTM':
         hidden_dim = 128  # Example hidden dimension; you can adjust it
         num_layers = 2  # Example number of LSTM layers; you can adjust it
-        bidirectional = False  # Change to True if you want a bidirectional LSTM
+        bidirectional = True  # Change to True if you want a bidirectional LSTM
 
-        model = LSTMNetwork(
+        model = LSTMNetworkWithAttention(
         input_dim=args.embedding_dim,  # The dimension of the input embeddings
         hidden_dim=hidden_dim,
         vocab_size=num_classes,  # Assuming num_classes corresponds to the output vocabulary size
         num_layers=num_layers,
-        bidirectional=bidirectional)
+        bidirectional=bidirectional,
+        LSTM_drop=0.1,
+        FC_drop=0.3)
+    elif model_name == 'CNN_1':
+        
+        hidden_dim = 256
+        model = TextCNNModel( vocab_size=num_classes, max_len=args.max_length, hidden_num=256, embedding_dim=512,dropout_rate=0.5)
     else:
         raise ValueError("Invalid model_name.")
     model = model.to(device)
@@ -163,8 +174,10 @@ if __name__ == "__main__":
     exp_path, ckpt_path, loss_path = setup_experiment_logging(args.log_dir, model_name)
 
     # Loss function and optimizer
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
+    criterion = nn.CrossEntropyLoss(ignore_index=0)
+    optimizer = optim.AdamW(model.parameters(), lr=args.learning_rate,weight_decay=1e-5)
+    #optimizer = optim.RMSprop(model.parameters(), lr=args.learning_rate, alpha=0.9, eps=1e-8, weight_decay=1e-5)
+
 
     # Train and evaluate
     train_model(model, train_loader, val_loader, criterion, optimizer, args.num_epochs, exp_path, ckpt_path, loss_path, device)
