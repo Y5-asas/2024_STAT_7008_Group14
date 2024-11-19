@@ -114,6 +114,36 @@ def train_CNN(args):
     pass
 
 
+def test_transformer(args):
+    exp_path, ckpt_path, loss_path = setup_experiment_logging(args.log_dir, args.model)
+
+    train_data, val_data, test_data, source_word_2_index, target_word_2_index = load_data(
+        args.train_file, args.val_file, args.test_file, args.source_language, args.target_language)
+    
+    data = pd.concat([train_data, test_data], ignore_index=True)
+
+    source_word_2_index = built_curpus(data[args.source_language])
+    target_word_2_index = built_curpus(data[args.target_language])
+
+    transformer.Train.src_language = args.source_language
+    transformer.Train.tgt_language = args.target_language
+    transformer.Train.source_word_2_index = source_word_2_index
+    transformer.Train.target_word_2_index = target_word_2_index
+    transformer.Train.src_vocab = len(source_word_2_index)
+    transformer.Train.target_vocab = len(target_word_2_index)
+    transformer.Train.N = 2
+    transformer.Train.ckpt_file_path = './ckpt/transformer.pth'
+    transformer.Train.Fixed_len = args.max_length
+    test_file = './nusax-main/datasets/mt/valid.csv'
+    transformer.test(test_file)
+
+
+def test_LSTM(args):
+    pass
+
+def test_CNN(args):
+    pass
+
 if __name__ == "__main__":
 
     args = parse_args()
@@ -121,11 +151,20 @@ if __name__ == "__main__":
     model_name = args.model
 
     if model_name == 'transformer':
-        train_transformer(args)
+        if args.mode == 'train':
+            train_transformer(args)
+        elif args.mode == 'test':
+            test_transformer(args)
     elif model_name == 'LSTM':
-        train_LSTM(args)
+        if args.mode == 'train':
+            train_LSTM(args)
+        elif args.mode == 'test':
+            test_LSTM(args)
     elif model_name == 'CNN':
-        train_CNN(args)
+        if args.mode == 'train':
+            train_CNN(args)
+        elif args.mode == 'test':
+            test_CNN(args)
     else:
         raise ValueError("Invalid model_name.")
 
