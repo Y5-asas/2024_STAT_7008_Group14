@@ -23,6 +23,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 import pandas as pd
 import random
 from torch.utils.data import Dataset, DataLoader
+from BLEU_score import calculate_bleu_score
 
 
 class EncoderDecoder(nn.Module):
@@ -639,4 +640,11 @@ def train():
         if epoch == Train.Epoch - 1:
             torch.save(model.state_dict(), Train.ckpt_file_path)
 
+
+def test(test_file):
+    model = make_model(Train.src_vocab, Train.target_vocab, N=Train.N)
+    model.load_state_dict(torch.load(Train.ckpt_file_path, weights_only=True))
+    model.eval()
+    score = calculate_bleu_score(test_file, Train.src_language, Train.tgt_language, translate, model, Train.source_word_2_index, Train.target_word_2_index,2)
+    print(f"BLEU score: {score}")
 
