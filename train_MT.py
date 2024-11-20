@@ -10,7 +10,7 @@ from Data_loader import TranslationDataset, built_curpus
 from cnn_model import CNNModel
 from lstm_model import LSTMNetwork, LSTMEncoder, LSTMDecoder
 from rnn_model import RNNNetwork, RNNEncoder, RNNDecoder
-#import transformer 
+import transformer 
 import pandas as pd
 import argparse
 
