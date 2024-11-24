@@ -1,10 +1,11 @@
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, BertTokenizer
 import pandas as pd
 from torch.utils.data import Dataset, DataLoader
 import torch
 import os
 from Visualization import get_confusion_matrix, plot_loss
 from pathlib import Path
+
 
 class Mydataset(Dataset):
     def __init__(self, data) -> None:
@@ -43,11 +44,11 @@ def evaluate():
     avg_valid_loss = total_loss / len(validloader)
     return acc, avg_valid_loss
 
-def train(num_epochs):
+def train(num_epochs, ckpt_path):
     best_acc = 0
     train_losses = []
     valid_losses = []
-    os.makedirs("./senti_ckpt", exist_ok=True)
+    os.makedirs(ckpt_path, exist_ok=True)
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0
@@ -66,7 +67,7 @@ def train(num_epochs):
         # save best model
         if accuracy > best_acc:
             best_acc = accuracy
-            torch.save(model.state_dict(), "./senti_ckpt/best_model.pth")
+            torch.save(model.state_dict(), os.path.join(ckpt_path, "best_model.pth"))
         print(f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_train_loss}")
         print(f"Validation Loss: {avg_valid_loss}, Validation Accuracy: {accuracy}")
     return train_losses, valid_losses
@@ -109,9 +110,16 @@ if __name__ == "__main__":
         'negative':0,
         'neutral':2
     }
-
-    tokenizer = AutoTokenizer.from_pretrained("cahya/distilbert-base-indonesian")
-    model = AutoModelForSequenceClassification.from_pretrained("cahya/distilbert-base-indonesian", num_labels=3).to(device)
+    # if indobert, True, elif distilbert, False
+    use_bert = False
+    if use_bert:
+        tokenizer = BertTokenizer.from_pretrained("indobenchmark/indobert-base-p1")
+        model = AutoModelForSequenceClassification.from_pretrained("indobenchmark/indobert-base-p1", num_labels=3).to(device)
+        ckpt_path = "./senti_ckpt/indobert"
+    else:
+        tokenizer = AutoTokenizer.from_pretrained("cahya/distilbert-base-indonesian")
+        model = AutoModelForSequenceClassification.from_pretrained("cahya/distilbert-base-indonesian", num_labels=3).to(device)
+        ckpt_path = "./senti_ckpt/distilbert"
     optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)
     train_dataset = Mydataset(train_data)
     valid_dataset = Mydataset(valid_data)
@@ -119,16 +127,15 @@ if __name__ == "__main__":
 
     trainloader = DataLoader(train_dataset, batch_size=8, shuffle=True, collate_fn = collate_fn)
     validloader = DataLoader(valid_dataset, batch_size=8, shuffle=True, collate_fn = collate_fn)
-    num_epochs = 10
-    train_losses, valid_losses = train(num_epochs)
-    model = AutoModelForSequenceClassification.from_pretrained("cahya/distilbert-base-indonesian", num_labels=3).to(device)
-    model.load_state_dict(torch.load("./senti_ckpt/best_model.pth",weights_only=True))
+    train_losses, valid_losses = train(num_epochs=10, ckpt_path=ckpt_path)
+    
+    model.load_state_dict(torch.load(os.path.join(ckpt_path, "best_model.pth"), weights_only=True))
     all_labels, all_preds = test()
     map = {0: 'negative', 1: 'positive', 2: 'neutral'}
     all_labels = [map[label] for label in all_labels]
     all_preds = [map[pred] for pred in all_preds]
-    get_confusion_matrix(all_labels, all_preds, save_path=Path('./senti_ckpt'))
-    plot_loss(train_losses, valid_losses, save_path=Path('./senti_ckpt'))
+    get_confusion_matrix(all_labels, all_preds, save_path=Path(ckpt_path))
+    plot_loss(train_losses, valid_losses, save_path=Path(ckpt_path))
     # example usage
     # sen = "Memang lemah kita ini aku juga penakut sebenarnya"
     # with torch.inference_mode():
