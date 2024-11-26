@@ -24,7 +24,7 @@ class MLP(nn.Module):
 
 
 class MLPModel(nn.Module):
-    def __init__(self, input_size, embedding_dim, num_classes, dropout, hidden_layers = [1024, 512, 128, 10]):
+    def __init__(self, input_size, embedding_dim, num_classes, dropout, hidden_layers = [1024, 512, 10]):
         super(MLPModel, self).__init__()
         self.embedding = nn.Embedding(input_size, embedding_dim,padding_idx=0)
         self.fc0 = MLP(embedding_dim * 1000, hidden_layers[0], dropout)
