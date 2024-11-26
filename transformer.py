@@ -456,6 +456,107 @@ class TranslationDataset_transformer(Dataset):
         return source_tokens, target_tokens, target_tokens_label
 
 
+# TranslationDataset class
+class TranslationDataset_transformer_extra(Dataset):
+    def __init__(self, source_data, target_data, source_word_2_index, target_word_2_index, max_length=1000):
+        """
+        Initializes the TranslationDataset.
+
+        Parameters:
+        - data (pd.DataFrame): The DataFrame containing the translation data.
+        - source_language (str): Column name for the source language.
+        - target_language (str): Column name for the target language.
+        - source_word_2_index (dict): Word-to-index mapping for the source language.
+        - target_word_2_index (dict): Word-to-index mapping for the target language.
+        - max_length (int): Maximum sequence length for padding/truncation.
+        """
+        self.source_texts = source_data.tolist()
+        self.target_texts = target_data.tolist()
+        self.source_word_2_index = source_word_2_index
+        self.target_word_2_index = target_word_2_index
+        self.max_length = max_length
+
+    def tokenize_and_pad_src(self, text, word_2_index):
+        """
+        Tokenizes and pads a single text.
+
+        Parameters:
+        - text (str): The input text (sentence).
+        - word_2_index (dict): Word-to-index mapping.
+
+        Returns:
+        - torch.Tensor: Tokenized and padded tensor.
+        """
+        # Tokenize words to indices
+        tokenized = [word_2_index.get(word, word_2_index["<UNK>"]) for word in text.split()]
+        # Add <SOS> and <EOS> tokens
+        tokenized = tokenized + [word_2_index["<EOS>"]]
+        # Pad or truncate to max_length
+        if len(tokenized) < self.max_length:
+            tokenized += [word_2_index["<PAD>"]] * (self.max_length - len(tokenized))
+        else:
+            tokenized = tokenized[:self.max_length]
+        return torch.tensor(tokenized, dtype=torch.long)
+    
+    def tokenize_and_pad_tgt(self, text, word_2_index):
+        """
+        Tokenizes and pads a single text.
+
+        Parameters:
+        - text (str): The input text (sentence).
+        - word_2_index (dict): Word-to-index mapping.
+
+        Returns:
+        - torch.Tensor: Tokenized and padded tensor.
+        """
+        # Tokenize words to indices
+        tokenized = [word_2_index.get(word, word_2_index["<UNK>"]) for word in text.split()]
+        # Add <SOS> and <EOS> tokens
+        tokenized = [word_2_index["<SOS>"]] + tokenized 
+        # Pad or truncate to max_length
+        if len(tokenized) < self.max_length:
+            tokenized += [word_2_index["<PAD>"]] * (self.max_length - len(tokenized))
+        else:
+            tokenized = tokenized[:self.max_length]
+        return torch.tensor(tokenized, dtype=torch.long)
+    
+    def tokenize_and_pad_tgt_label(self, text, word_2_index):
+        """
+        Tokenizes and pads a single text.
+
+        Parameters:
+        - text (str): The input text (sentence).
+        - word_2_index (dict): Word-to-index mapping.
+
+        Returns:
+        - torch.Tensor: Tokenized and padded tensor.
+        """
+        # Tokenize words to indices
+        tokenized = [word_2_index.get(word, word_2_index["<UNK>"]) for word in text.split()]
+        # Add <SOS> and <EOS> tokens
+        tokenized = tokenized + [word_2_index["<EOS>"]]
+        # Pad or truncate to max_length
+        if len(tokenized) < self.max_length:
+            tokenized += [word_2_index["<PAD>"]] * (self.max_length - len(tokenized))
+        else:
+            tokenized = tokenized[:self.max_length]
+        return torch.tensor(tokenized, dtype=torch.long)
+
+    def __len__(self):
+        return len(self.source_texts)
+
+    def __getitem__(self, idx):
+        source_text = self.source_texts[idx]
+        target_text = self.target_texts[idx]
+
+        # Tokenize and pad the source and target texts
+        source_tokens = self.tokenize_and_pad_src(source_text, self.source_word_2_index)
+        target_tokens = self.tokenize_and_pad_tgt(target_text, self.target_word_2_index)
+        target_tokens_label = self.tokenize_and_pad_tgt_label(target_text, self.target_word_2_index)
+
+        return source_tokens, target_tokens, target_tokens_label
+
+
 class Train:
     src_language: str = None
     tgt_language: str = None
@@ -472,6 +573,7 @@ class Train:
     log_file_path: str = None
     loss_file_path: str = None
     ckpt_file_path: str = None
+    test_file_path: str = None
 
 
 class TrainState:
@@ -637,6 +739,11 @@ def train():
         print(translate(model, src, Train.source_word_2_index, Train.target_word_2_index, 2))
         print()
 
+
+        model.eval()
+        score = calculate_bleu_score(Train.test_file_path, Train.src_language, Train.tgt_language, translate, model, Train.source_word_2_index, Train.target_word_2_index,2)
+        print(f"valid BLEU score: {score}")
+
         if epoch == Train.Epoch - 1:
             torch.save(model.state_dict(), Train.ckpt_file_path)
 
@@ -646,5 +753,5 @@ def test(test_file):
     model.load_state_dict(torch.load(Train.ckpt_file_path, weights_only=True))
     model.eval()
     score = calculate_bleu_score(test_file, Train.src_language, Train.tgt_language, translate, model, Train.source_word_2_index, Train.target_word_2_index,2)
-    print(f"BLEU score: {score}")
+    print(f"test BLEU score: {score}")
 

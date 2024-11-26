@@ -71,6 +71,48 @@ def create_dataloaders(model, train_data, val_data, test_data, source_language, 
     return train_loader, val_loader, test_loader
 
 
+def pretrain_transformer(args):
+
+    exp_path, ckpt_path, loss_path = setup_experiment_logging(args.log_dir, args.model)
+
+    train_data, val_data, test_data, source_word_2_index, target_word_2_index = load_data(
+        args.train_file, args.val_file, args.test_file, args.source_language, args.target_language)
+    
+    extra_data_source = pd.read_csv('identic.csv', usecols=lambda col: col != 'Unnamed: 0')[args.source_language][:5000]
+    extra_data_target = pd.read_csv('identic.csv', usecols=lambda col: col != 'Unnamed: 0')[args.target_language][:5000]
+
+    total_data_source = pd.concat([train_data[args.source_language], extra_data_source], ignore_index=True)
+    total_data_target = pd.concat([train_data[args.target_language], extra_data_target], ignore_index=True)
+
+    # Build vocabularies
+    source_word_2_index = built_curpus(total_data_source)
+    target_word_2_index = built_curpus(total_data_target)
+
+    dataset = transformer.TranslationDataset_transformer_extra(total_data_source, total_data_target, source_word_2_index, target_word_2_index, args.max_length)
+    dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
+
+    transformer.Train.src_language = args.source_language
+    transformer.Train.tgt_language = args.target_language
+    transformer.Train.source_word_2_index = source_word_2_index
+    transformer.Train.target_word_2_index = target_word_2_index
+    transformer.Train.src_vocab = len(source_word_2_index)
+    transformer.Train.target_vocab = len(target_word_2_index)
+    transformer.Train.N = 2
+    transformer.Train.Fixed_len = args.max_length
+    transformer.Train.Train_Data = val_data
+    transformer.Train.Dataloader = dataloader
+    transformer.Train.Epoch = args.num_epochs
+    transformer.Train.Batch_size = args.batch_size
+    transformer.Train.log_file_path = exp_path / 'training_log.txt'
+    transformer.Train.loss_file_path = loss_path / 'losses.txt'
+    transformer.Train.ckpt_file_path = ckpt_path / 'pretrain_transformer.pth'
+    transformer.Train.test_file_path = './nusax-main/datasets/mt/valid.csv'
+
+    transformer.train()
+
+    test_file = './nusax-main/datasets/mt/test.csv'
+    transformer.test(test_file)
+
 def train_transformer(args):
 
     exp_path, ckpt_path, loss_path = setup_experiment_logging(args.log_dir, args.model)
@@ -78,10 +120,11 @@ def train_transformer(args):
     train_data, val_data, test_data, source_word_2_index, target_word_2_index = load_data(
         args.train_file, args.val_file, args.test_file, args.source_language, args.target_language)
     
-    data = pd.concat([train_data, test_data], ignore_index=True)
+    # data = pd.concat([train_data, test_data], ignore_index=True)
+    data = train_data
 
     # Build vocabularies
-    source_word_2_index = built_curpus(data[args.target_language])
+    source_word_2_index = built_curpus(data[args.source_language])
     target_word_2_index = built_curpus(data[args.target_language])
 
     dataset = transformer.TranslationDataset_transformer(data, args.source_language, args.target_language, source_word_2_index, target_word_2_index, args.max_length)
@@ -95,15 +138,19 @@ def train_transformer(args):
     transformer.Train.target_vocab = len(target_word_2_index)
     transformer.Train.N = 2
     transformer.Train.Fixed_len = args.max_length
-    transformer.Train.Train_Data = data
+    transformer.Train.Train_Data = val_data
     transformer.Train.Dataloader = dataloader
     transformer.Train.Epoch = args.num_epochs
     transformer.Train.Batch_size = args.batch_size
     transformer.Train.log_file_path = exp_path / 'training_log.txt'
     transformer.Train.loss_file_path = loss_path / 'losses.txt'
     transformer.Train.ckpt_file_path = ckpt_path / 'transformer.pth'
+    transformer.Train.test_file_path = './nusax-main/datasets/mt/valid.csv'
 
     transformer.train()
+
+    test_file = './nusax-main/datasets/mt/test.csv'
+    transformer.test(test_file)
 
 def train_nn(args, model, train_loader, val_loader, criterion, optimizer, num_epochs, exp_path, ckpt_path, loss_path, device):
     log_file = exp_path / 'training_log.txt'
@@ -182,7 +229,7 @@ def test_transformer(args):
     transformer.Train.N = 2
     transformer.Train.ckpt_file_path = './ckpt/transformer.pth'
     transformer.Train.Fixed_len = args.max_length
-    test_file = './nusax-main/datasets/mt/valid.csv'
+    test_file = './nusax-main/datasets/mt/test.csv'
     transformer.test(test_file)
 
 
@@ -220,10 +267,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if model_name == 'transformer':
-        if args.mode == 'train':
-            train_transformer(args)
-        elif args.mode == 'test':
-            test_transformer(args)
+        pretrain_transformer(args)
     else:
         model = []
         train_data, val_data, test_data, source_word_2_index, target_word_2_index = load_data(
