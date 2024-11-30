@@ -165,7 +165,7 @@ if __name__ == '__main__':
     model = init_model
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-5)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.8)
+    # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.8)
 
     # Train the model
     num_epochs = 100
