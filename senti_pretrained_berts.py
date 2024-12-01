@@ -119,7 +119,7 @@ if __name__ == "__main__":
     }
     # if indobert, True, elif distilbert, False
     if args.model == 'indobert':
-        tokenizer = BertTokenizer.from_pretrained("indobenchmark/indobert-base-p1")
+        tokenizer = BertTokenizer.from_pretrained("indobenchmark/indobert-large-p1")
         model = AutoModelForSequenceClassification.from_pretrained("indobenchmark/indobert-large-p1", num_labels=3).to(device)
         ckpt_path = "./senti_ckpt/indobert"
     elif args.model == 'distilbert':
