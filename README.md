@@ -72,6 +72,13 @@ The dataset used in this project is the NusaX corpus, which contains parallel da
 
    # Running sentiment analysis models
    python train_sentiment.py
+
+   # Training a Transformer model for sentiment analysis
+   python transformer.py
+
+   # Running pre-trained IndoBERT or DistilBert
+   python senti_pretrained_distilbert.py  --model indobert
+   python senti_pretrained_distilbert.py  --model distilbert
    ```
 
 ## Results and Evaluation
