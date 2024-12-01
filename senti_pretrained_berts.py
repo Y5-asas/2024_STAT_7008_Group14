@@ -5,7 +5,13 @@ import torch
 import os
 from Visualization import get_confusion_matrix, plot_loss
 from pathlib import Path
+import argparse
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Sentiment Analysis using pretrained DistilBERT")
+    parser.add_argument("--num_epochs", type=int, default=10, help="Number of epochs")
+    parser.add_argument("--model", type=str, default='distilbert', choices=['distilbert', 'indobert'], help="Type of pretrained model to use")
+    return parser.parse_args()
 
 class Mydataset(Dataset):
     def __init__(self, data) -> None:
@@ -100,6 +106,7 @@ def test():
     return all_labels, all_preds
 
 if __name__ == "__main__":
+    args = parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_data = pd.read_csv('./nusax-main/datasets/sentiment/indonesian/train.csv')
     valid_data = pd.read_csv('./nusax-main/datasets/sentiment/indonesian/valid.csv')
@@ -111,15 +118,16 @@ if __name__ == "__main__":
         'neutral':2
     }
     # if indobert, True, elif distilbert, False
-    use_bert = False
-    if use_bert:
+    if args.model == 'indobert':
         tokenizer = BertTokenizer.from_pretrained("indobenchmark/indobert-base-p1")
-        model = AutoModelForSequenceClassification.from_pretrained("indobenchmark/indobert-base-p1", num_labels=3).to(device)
+        model = AutoModelForSequenceClassification.from_pretrained("indobenchmark/indobert-large-p1", num_labels=3).to(device)
         ckpt_path = "./senti_ckpt/indobert"
-    else:
+    elif args.model == 'distilbert':
         tokenizer = AutoTokenizer.from_pretrained("cahya/distilbert-base-indonesian")
         model = AutoModelForSequenceClassification.from_pretrained("cahya/distilbert-base-indonesian", num_labels=3).to(device)
         ckpt_path = "./senti_ckpt/distilbert"
+    else:
+        raise ValueError("Invalid model type")
     optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)
     train_dataset = Mydataset(train_data)
     valid_dataset = Mydataset(valid_data)
@@ -127,7 +135,7 @@ if __name__ == "__main__":
 
     trainloader = DataLoader(train_dataset, batch_size=8, shuffle=True, collate_fn = collate_fn)
     validloader = DataLoader(valid_dataset, batch_size=8, shuffle=True, collate_fn = collate_fn)
-    train_losses, valid_losses = train(num_epochs=10, ckpt_path=ckpt_path)
+    train_losses, valid_losses = train(num_epochs=args.num_epochs, ckpt_path=ckpt_path)
     
     model.load_state_dict(torch.load(os.path.join(ckpt_path, "best_model.pth"), weights_only=True))
     all_labels, all_preds = test()
