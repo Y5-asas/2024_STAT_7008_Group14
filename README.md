@@ -68,7 +68,7 @@ The dataset used in this project is the NusaX corpus, which contains parallel da
 3. **Example Commands**:
    ```bash
    # Training a translation model
-   python train_translation.py
+   python train_MT.py --model transformer
 
    # Running sentiment analysis models
    python train_sentiment.py
