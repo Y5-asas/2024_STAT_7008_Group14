@@ -55,11 +55,11 @@ The dataset used in this project is the NusaX corpus, which contains parallel da
 ## Usage
 
 1. **Requirements**:
-   - Python 3.x
-   - PyTorch
-   - Transformers library (`transformers`)
-   - Pandas, NumPy
-   - Matplotlib (for visualization)
+   - All requirements are in the nlp_7008.yml file
+   ```bash
+   conda env create -f nlp_7008.yml
+   conda activate nlp_7008
+   ```
 
 2. **Running the Project**:
    - Prepare the dataset as per the requirements (ensure the CSV files are correctly formatted).
