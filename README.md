@@ -69,7 +69,9 @@ The dataset used in this project is the NusaX corpus, which contains parallel da
    ```bash
    # Training a translation model
    python train_MT.py --model transformer
-
+   ```
+  We have tried to develop the LSTM and RNN model. They showed that without the Word2Vec, it performed bad. So here we offered the choices of --model LSTM and --model RNN, but not recommend to use them.
+   ```bash
    # Running sentiment analysis models
    python train_sentiment.py
 
