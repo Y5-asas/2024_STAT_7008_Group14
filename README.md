@@ -79,10 +79,10 @@ The dataset used in this project is the NusaX corpus, which contains parallel da
    ```
  - If you would like to use the Word2Vec to compare the performance with MLP, CNN and SVM, you should put the file [Fasttext]([URL](https://fasttext.cc/docs/en/crawl-vectors.html)) (Indonesian, in the format of .vec) into the directionary word_2_vec
   ```bash
-   cd word_2_vec
-   python word_2_vec_mlp.py
-   python word_2_vec_cnn.py
-   python word_2_vec_svm.py
+      cd word_2_vec
+      python word_2_vec_mlp.py
+      python word_2_vec_cnn.py
+      python word_2_vec_svm.py
    ```
   
   ```bash
