@@ -80,9 +80,9 @@ The dataset used in this project is the NusaX corpus, which contains parallel da
  - We have tried to develop the LSTM and RNN model. They showed that without the Word2Vec, it performed bad. So here we offered the choices of --model LSTM and --model RNN, but not recommend to use them.
    ```bash
    # Running sentiment analysis models
-   python train_senti.py --model MLP
-   python train_senti.py --model CNN
-   python train_senti.py --model SVM
+   python train_sentiment.py --model MLP
+   python train_sentiment.py --model CNN
+   python train_sentiment.py --model SVM
    ```
  - If you would like to use the Word2Vec to compare the performance with MLP, CNN and SVM, you should put the file [Fasttext](https://fasttext.cc/docs/en/crawl-vectors.html) (Indonesian, in the format of .vec) into the directionary word_2_vec
   ```bash
