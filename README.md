@@ -94,7 +94,8 @@ The dataset used in this project is the NusaX corpus, which contains parallel da
    ```
   
   ```bash
-
+   # Running transformer for Sentiment Tasks
+   python transformer_senti.py 
 
    # Running pre-trained IndoBERT or DistilBert
    python senti_pretrained_distilbert.py  --model indobert
