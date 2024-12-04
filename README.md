@@ -66,9 +66,16 @@ The dataset used in this project is the NusaX corpus, which contains parallel da
    - Train models for machine translation and sentiment analysis by following the provided scripts.
 
 3. **Example Commands**:
+- We have integrated all models used for MT tasks in this project into train_MT.py, here  are some examples:
    ```bash
-   # Training a translation model
-   python train_MT.py --model transformer
+   # Training a transformer to translation
+   python train_MT.py --model transformer --source_language indonesian --target_language english
+   # Training a LSTM to translation
+   python train_MT.py --model LSTM --source_language indonesian --target_language english 
+   # Training a CNN to translation
+   python train_MT.py --model CNN --source_language indonesian --target_language english
+   # Training a RNN to translation
+   python train_MT.py --model RNN --source_language indonesian --target_language english 
    ```
  - We have tried to develop the LSTM and RNN model. They showed that without the Word2Vec, it performed bad. So here we offered the choices of --model LSTM and --model RNN, but not recommend to use them.
    ```bash
