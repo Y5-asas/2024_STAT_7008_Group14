@@ -100,6 +100,10 @@ The dataset used in this project is the NusaX corpus, which contains parallel da
    python senti_pretrained_distilbert.py  --model indobert
    python senti_pretrained_distilbert.py  --model distilbert
    ```
+4. **Try M2M100 or mBart model**
+ - If you would like to try the M2M100 or the mBart model, you can access the link below and upload the NusaX:
+   [M2M100](https://huggingface.co/facebook/m2m100_418M)
+   [mBart](https://huggingface.co/facebook/mbart-large-50-many-to-many-mmt)
 
 ## Results and Evaluation
 
